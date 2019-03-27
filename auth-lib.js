@@ -1,120 +1,173 @@
-var allUsers = [ // cписок пользователей
+var allUsers = [
 	// {username: "admin", password: "1234", groups: ["admin", "manager", "basic"]},
 	// {username: "sobakajozhec", password: "ekh228", groups: ["basic", "manager"]},
 	// {username: "patriot007", password: "russiaFTW", groups: ["basic"]}
-];
+	];
 
 var allRights = [
-// "manage content", "play games", "delete users", "view site"
-]; // cписок прав
+	// "manage content", "play games", "delete users", "view site"
+	];
 
 var allGroups = [
 	// {"admin": [allRights[2]]},
 	// {"manager": [allRights[0]]},
 	// {"basic": [allRights[1], allRights[3]]}
-]; //список групп
+	];
+
+var countGroups = 0; 
+var countRights = 0;
 
 
-var session = true;
-
-
-function createUser(username, password) { // Создает нового пользователя с указанным логином `username` и паролем `password`, возвращает созданного пользователя. +
+function createUser(username, password) {
 	var user = {username: username, password: password, groups: []};
 	allUsers.push(user);
-	return user;
+	return allUsers[allUsers.length - 1];
 };
 
 
-function deleteUser(user) { // `function deleteUser(user: Any): undefined` Удаляет пользователя `user` +
+function deleteUser(user) {
 	var x = allUsers.indexOf(user);
-	allUsers.splice(x, 1);
+	
+	if (x >= 0) {
+		allUsers.splice(x, 1);
+	} else if (user == undefined || x < 0) {
+		throw new Error("передали плохой аргумент или уже удаленн(ого/ую) user");
+	}
 };
 
 
-function users() { //Возвращает массив всех пользователей. +
+function users() {
 	return allUsers;
 };
 
 
-function createGroup() { // Создает новую группу и возвращает её `function createGroup(): Any` нет аргументов +
-	allGroups.push({rights: []});
+
+function createGroup() {
+	
+	function counter() { 
+		return countGroups++ ;
+	}
+	group = {};
+	var key = 'group' + String(counter());
+	group[key] = [];
+
+	allGroups.push(group);
 	return allGroups[allGroups.length -1];
 };
 
 
-// должна бросить исключение, если ей передали плохой аргумент
-// должна бросить исключение, если ей передали уже удаленн(ого/ое/ую) group
-function deleteGroup(group) { //`function deleteGroup(group: Any): undefined` Удаляет группу `group`++
-	var x = allGroups.indexOf(group); // возвращаем индекс вхождения group
+function deleteGroup(group) {
+	var x = allGroups.indexOf(group);
 
-	if (x >= 0) {							// если во всех группах - группа есть, то
-		allUsers.forEach(function(element){	// перебираем всех пользователей - их группы
-			if (element.groups.indexOf(group) >= 0) { // если удаляемая группа есть в группах пользователя, то
-				removeUserFromGroup(element, group);  // то удаляем пользователя из группы
+	if (x >= 0) {
+		allUsers.forEach(function(element){
+			if (element.groups.indexOf(group) >= 0) {
+				removeUserFromGroup(element, group);
 			}
 		});
 	allGroups.splice(x, 1); // удалить группу
 		return // остановить выполнение функции
 	} else {
-		throw new Error('группа удаление не найдена');
+		throw new Error('такая группа уже удалена');
 	}
 };
 
-function groups() { // `function groups(): Array<Any>` Возвращает массив групп +
+function groups() {
 	return allGroups;
 };
 
 
 
-function addUserToGroup(user, group) { // Добавляет пользователя `user` в группу `group`//`function addUserToGroup(user: Any, group: Any): undefined` 
-	user.groups.push(group);
-};
-
-
-function userGroups(user) { // Возвращает массив групп, к которым принадлежит пользователь +
-	for (i = 0; i < allUsers.length; i++) {
-		if (user === allUsers[i]) {
-			return allUsers[i].groups;
-		}
+function addUserToGroup(user, group) {
+	if (group == undefined || allUsers.indexOf(user) == -1 || allGroups.indexOf(group) == -1) {
+		throw new Error("передали плохой аргумент или удаленный аргумент");
+	} else {
+		user.groups.push(group);
 	}
 };
 
 
-function removeUserFromGroup(user, group) { //`function removeUserFromGroup(user: Any, group: Any): undefined` Удаляет пользователя `user` из группы `group`. Должна бросить исключение, если пользователя `user` нет в группе `group` +-
+function userGroups(user) {
+	return user.groups;
+};
+
+
+function removeUserFromGroup(user, group) {
+	if (group == undefined || allUsers.indexOf(user) == -1 || allGroups.indexOf(group) == -1) {
+		throw new Error("передали плохой аргумент или удаленный аргумент");
+	}
 	var x = user.groups.indexOf(group);
-	user.groups.splice(x, 1);
+
+	if (x >= 0) {
+		user.groups.splice(x, 1);
+	} else {
+		throw new Error("попытка удалить user из группы, которого там нет");
+	}
 };
 
-function createRight() { // `function createRight(): Any` Создает новое право и возвращает его +
-	var right = {};
+
+function createRight() {
+	function counter() { 
+		return countGroups++;
+	}
+
+	var right = 'right' + String(counter());
+
 	allRights.push(right);
-	return right;
+	return allRights[allRights.length - 1]
 };
 
-function deleteRight(right) { // `function deleteRight(right: Any): undefined` --- Удаляет право `right` +
+
+function deleteRight(right) {
 	var x = allRights.indexOf(right);
-	allRights.splice(x, 1);
+
+
+	if (x >= 0) {
+		allRights.splice(x, 1);
+		for (var i = 0; i < allGroups.length; i++) {
+			
+			var arrayGroup = allGroups[i][Object.keys(allGroups[i])]
+			
+			if (arrayGroup.indexOf(right) >= 0) {
+				var x1 = arrayGroup.indexOf(right);
+				arrayGroup.splice(x1, 1);
+			};
+		};
+	} else {
+		throw new Error("попытка удалить right , которого там нет");
+	}
+
 };
 
-function groupRights(group) { // `function groupRights(group: Any): Array<Any>` Возвращает массив прав, которые принадлежат группе `group`  +
-	return group.rights;
+
+function groupRights(group) {
+	return group[Object.keys(group)];
 };
 
-function rights() { // `function rights(): Array<Any>` Возвращает массив прав +
+
+function rights() {
 	return allRights;
 };
 
 
-function addRightToGroup(right, group) { // `function addRightToGroup(right: Any, group: Any) : undefined` Добавляет право `right` к группе `group`
-	group.rights.push(right);
+function addRightToGroup(right, group) {
+	if (allRights.indexOf(right) == -1 || allGroups.indexOf(group) == -1 || group == undefined) {
+		throw new Error("передали плохой аргумент");
+	} else {
+		group[Object.keys(group)].push(right)
+	}
 };
 
-function removeRightFromGroup(right, group) { //`function removeRightFromGroup(right: Any, group: Any) : undefined` Удаляет право `right` из группы `group`. Должна бросить исключение, если права `right` нет в группе `group`
-	var x = group.rights.indexOf(right);
-	group.rights.splice(x, 1);
+function removeRightFromGroup(right, group) { 
+	if (allRights.indexOf(right) == -1 || allGroups.indexOf(group) == -1 || group == undefined || group[Object.keys(group)].indexOf(right) == -1) {
+		throw new Error("передали плохой аргумент");
+	} else {
+		var x = group[Object.keys(group)].indexOf(right);
+		group[Object.keys(group)].splice(x, 1);
+	}
 };
 
-function login(username, password) { // `function login(username: String, password: String): Boolean` *return* 	-	`true`, если пользователь с логином `username` и паролем `password` существует, `false` в противном случае.  Также функция `login` должна вернуть `false` в случае, если сессия пользователя уже существует.
+function login(username, password) {
   for (i = 0; i < allUsers.length; i++) {
     if (username == allUsers[i].username && password == allUsers[i].password) {
       return true;
@@ -137,7 +190,7 @@ function logout() {
 };
 
 
-function isAuthorized(user, right) { // `true` в случае, если пользователь `user` обладает правом `right`, `false` в противном случае
+function isAuthorized(user, right) {
 	if (user.groups.rights.indexOf(right) >= 0) {
 		return true
 	} else {
@@ -145,10 +198,35 @@ function isAuthorized(user, right) { // `true` в случае, если пол�
 	}
 };
 
+function func() {
+
+	console.log('создаем и выводим пользователя:');
+	var user1 = createUser('admin', '123');
+	console.log(user1);
+	console.log('---------');
+	
+	console.log('создаем и выводим группу:');
+	var group1 = createGroup();
+	console.log(group1);
+	console.log('---------');
+
+	console.log('добавляем пользователя в группу и выводим пользователя');
+	addUserToGroup(user1, group1);
+	console.log(user1);
+	console.log('---------');
+
+	console.log('создаем и выводим правило:');
+	var right1 = createRight();
+	console.log(right1);
+	console.log('---------');
+	
+	console.log('выводим все правила:');
+	console.log(rights());
+	console.log('---------');
+
+	console.log('добавляем правило в группу');
+	addRightToGroup(right1, group1);
+	console.log(group1);
+};
 
 
-
-
-
-
-// аргумент плохой - null или undefinded
