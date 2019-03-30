@@ -14,22 +14,29 @@ var allGroups = [
 	// {"basic": [allRights[1], allRights[3]]}
 	];
 
-var countGroups = 0; 
-var countRights = 0;
+
+var loggedUser = undefined; // вошедший пользователь
+var session = undefined; // состояние текущей сессии вошедшего пользователя с вводом пароля
+// var guestSession = undefined;
+
+
+
+var countGroups = 0; // счетчик для создания имен групп
+var countRights = 0; // счетчик для создания имен прав
 
 
 function createUser(username, password) {
 	var user = {username: username, password: password, groups: []};
-	allUsers.push(user);
-	return allUsers[allUsers.length - 1];
+	users().push(user);
+	return users()[users().length - 1];
 };
 
 
 function deleteUser(user) {
-	var x = allUsers.indexOf(user);
+	var x = users().indexOf(user);
 	
 	if (x >= 0) {
-		allUsers.splice(x, 1);
+		users().splice(x, 1);
 	} else if (user == undefined || x < 0) {
 		throw new Error("передали плохой аргумент или уже удаленн(ого/ую) user");
 	}
@@ -41,9 +48,7 @@ function users() {
 };
 
 
-
 function createGroup() {
-	
 	function counter() { 
 		return countGroups++ ;
 	}
@@ -52,15 +57,15 @@ function createGroup() {
 	group[key] = [];
 
 	allGroups.push(group);
-	return allGroups[allGroups.length -1];
+	return allGroups[allGroups.length - 1];
 };
 
 
 function deleteGroup(group) {
-	var x = allGroups.indexOf(group);
+	var x = groups().indexOf(group);
 
 	if (x >= 0) {
-		allUsers.forEach(function(element){
+		users().forEach(function(element){
 			if (element.groups.indexOf(group) >= 0) {
 				removeUserFromGroup(element, group);
 			}
@@ -77,10 +82,9 @@ function groups() {
 };
 
 
-
 function addUserToGroup(user, group) {
 	if (group == undefined || allUsers.indexOf(user) == -1 || allGroups.indexOf(group) == -1) {
-		throw new Error("передали плохой аргумент или удаленный аргумент");
+		throw new Error("передали плохой или удаленный аргумент");
 	} else {
 		user.groups.push(group);
 	}
@@ -88,20 +92,16 @@ function addUserToGroup(user, group) {
 
 
 function userGroups(user) {
-	return user.groups;
+	return user['groups'];
 };
 
 
 function removeUserFromGroup(user, group) {
-	if (group == undefined || allUsers.indexOf(user) == -1 || allGroups.indexOf(group) == -1) {
-		throw new Error("передали плохой аргумент или удаленный аргумент");
-	}
-	var x = user.groups.indexOf(group);
-
-	if (x >= 0) {
-		user.groups.splice(x, 1);
+	if (user.groups.indexOf(group) == -1 || users().indexOf(user) == -1) {
+		throw new Error("передали плохой или удаленный аргумент");
 	} else {
-		throw new Error("попытка удалить user из группы, которого там нет");
+		var x = user.groups.indexOf(group);
+		user.groups.splice(x, 1);
 	}
 };
 
@@ -119,13 +119,10 @@ function createRight() {
 
 
 function deleteRight(right) {
-	var x = allRights.indexOf(right);
-
-
+	var x = rights().indexOf(right);
 	if (x >= 0) {
 		allRights.splice(x, 1);
 		for (var i = 0; i < allGroups.length; i++) {
-			
 			var arrayGroup = allGroups[i][Object.keys(allGroups[i])]
 			
 			if (arrayGroup.indexOf(right) >= 0) {
@@ -136,7 +133,6 @@ function deleteRight(right) {
 	} else {
 		throw new Error("попытка удалить right , которого там нет");
 	}
-
 };
 
 
@@ -151,15 +147,16 @@ function rights() {
 
 
 function addRightToGroup(right, group) {
-	if (allRights.indexOf(right) == -1 || allGroups.indexOf(group) == -1 || group == undefined) {
+	if (rights().indexOf(right) == -1 || allGroups.indexOf(group) == -1 || group == undefined) {
 		throw new Error("передали плохой аргумент");
 	} else {
 		group[Object.keys(group)].push(right)
 	}
 };
 
+
 function removeRightFromGroup(right, group) { 
-	if (allRights.indexOf(right) == -1 || allGroups.indexOf(group) == -1 || group == undefined || group[Object.keys(group)].indexOf(right) == -1) {
+	if (groups().indexOf(group) == -1 || group[Object.keys(group)].indexOf(right) == -1) {
 		throw new Error("передали плохой аргумент");
 	} else {
 		var x = group[Object.keys(group)].indexOf(right);
@@ -167,66 +164,98 @@ function removeRightFromGroup(right, group) {
 	}
 };
 
+
 function login(username, password) {
-  for (i = 0; i < allUsers.length; i++) {
-    if (username == allUsers[i].username && password == allUsers[i].password) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
-
-function currentUser() {
-	if (login() == true) {
-		return user;
-	} else {
-		return undefined;
-	}
-};
-
-function logout() {
-	session = undefined;
-};
-
-
-function isAuthorized(user, right) {
-	if (user.groups.rights.indexOf(right) >= 0) {
-		return true
+	if (session == undefined) {
+		var arrayUsers = users().filter(function(user) {
+			return username === user['username'] && password === user['password'];
+		});
+		
+		if (arrayUsers.length == 1) {
+			loggedUser = arrayUsers[0];
+			session = true;
+			return true
+		} else {
+			return false
+		}
 	} else {
 		return false
 	}
 };
 
-function func() {
 
-	console.log('создаем и выводим пользователя:');
-	var user1 = createUser('admin', '123');
-	console.log(user1);
-	console.log('---------');
-	
-	console.log('создаем и выводим группу:');
-	var group1 = createGroup();
-	console.log(group1);
-	console.log('---------');
-
-	console.log('добавляем пользователя в группу и выводим пользователя');
-	addUserToGroup(user1, group1);
-	console.log(user1);
-	console.log('---------');
-
-	console.log('создаем и выводим правило:');
-	var right1 = createRight();
-	console.log(right1);
-	console.log('---------');
-	
-	console.log('выводим все правила:');
-	console.log(rights());
-	console.log('---------');
-
-	console.log('добавляем правило в группу');
-	addRightToGroup(right1, group1);
-	console.log(group1);
+function currentUser() {
+	if (session == true) {
+		return loggedUser
+	} else {
+		return undefined
+	}
 };
 
 
+function logout() {
+	loggedUser = undefined;
+	session = undefined;
+};
+
+
+function isAuthorized(user, right) {
+	if (users().indexOf(user) == -1 || rights().indexOf(right) == -1) {
+		throw new Error("передали плохой аргумент");
+	} else {
+		var arr = [];
+		for (var i = 0; i < user.groups.length; i++) {
+			var arrayRights = user.groups[i][Object.keys(user.groups[i])]
+				arrayRights.forEach(function(rightInArr){
+					arr.push(rightInArr)
+				});
+		}
+		if (arr.indexOf(right) >= 0) {
+			return true
+		} else {
+			return false
+		}
+	}
+};
+
+
+
+console.log('создаем и выводим пользователя:');
+var user1 = createUser('admin', '123');
+console.log(user1);
+console.log('---------');
+
+console.log('создаем и выводим группу:');
+var group1 = createGroup();
+console.log(group1);
+console.log('---------');
+
+console.log('добавляем пользователя в группу и выводим пользователя');
+addUserToGroup(user1, group1);
+console.log(user1);
+console.log('---------');
+
+console.log('создаем и выводим правило:');
+var right1 = createRight();
+console.log(right1);
+console.log('---------');
+
+console.log('выводим все правила:');
+console.log(rights());
+console.log('---------');
+
+console.log('добавляем правило в группу и выводим группу');
+addRightToGroup(right1, group1);
+console.log(group1);
+console.log('---------');
+
+console.log('логинимся в систему, вошедший юзер:');
+login(user1.username, user1.password)
+console.log(loggedUser)
+console.log('состояние сессии:');
+console.log(session)
+console.log('выходим из системы, вошедший юзер:');
+logout()
+console.log(loggedUser)
+console.log('состояние сессии:');
+console.log(session)
